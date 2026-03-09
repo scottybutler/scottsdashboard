@@ -1206,5 +1206,42 @@ async function init() {
 
 init();
 </script>
+<script>
+// ===== PASSWORD PROTECTION =====
+(function() {
+  const PASS = '32173012';
+  const SESSION_KEY = 'sdb_auth';
+  if (sessionStorage.getItem(SESSION_KEY) === PASS) return;
+  document.body.style.display = 'none';
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:#0e1117;display:flex;align-items:center;justify-content:center;z-index:9999;font-family:DM Sans,sans-serif;';
+  overlay.innerHTML = `
+    <div style="background:#161b27;border:1px solid rgba(255,255,255,0.07);border-radius:24px;padding:40px;max-width:340px;width:90%;text-align:center;">
+      <div style="font-family:Playfair Display,serif;font-size:1.5rem;font-weight:700;color:#e8c547;margin-bottom:8px;">Scott's Dashboard</div>
+      <div style="font-size:0.85rem;color:#8a8f9e;margin-bottom:28px;">Enter your password to continue</div>
+      <input id="pw-input" type="password" placeholder="Password" style="width:100%;background:#0e1117;border:1px solid rgba(255,255,255,0.07);border-radius:12px;color:#e8e6df;font-family:DM Sans,sans-serif;font-size:1rem;padding:14px 16px;outline:none;text-align:center;margin-bottom:12px;">
+      <button id="pw-btn" style="width:100%;padding:14px;border-radius:12px;border:none;background:#e8c547;color:#0e1117;font-family:DM Sans,sans-serif;font-size:1rem;font-weight:700;cursor:pointer;">Unlock</button>
+      <div id="pw-error" style="color:#e05c5c;font-size:0.8rem;margin-top:10px;display:none;">Incorrect password</div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  function tryUnlock() {
+    const val = document.getElementById('pw-input').value;
+    if (val === PASS) {
+      sessionStorage.setItem(SESSION_KEY, PASS);
+      overlay.remove();
+      document.body.style.display = '';
+    } else {
+      document.getElementById('pw-error').style.display = 'block';
+      document.getElementById('pw-input').value = '';
+      document.getElementById('pw-input').focus();
+    }
+  }
+
+  document.getElementById('pw-btn').onclick = tryUnlock;
+  document.getElementById('pw-input').addEventListener('keydown', e => { if (e.key === 'Enter') tryUnlock(); });
+  document.body.style.display = '';
+})();
+</script>
 </body>
 </html>
