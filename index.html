@@ -1207,40 +1207,85 @@ async function init() {
 init();
 </script>
 <script>
-// ===== PASSWORD PROTECTION =====
+// ===== PASSWORD PROTECTION + AUTO-LOCK =====
 (function() {
   const PASS = '32173012';
   const SESSION_KEY = 'sdb_auth';
-  if (sessionStorage.getItem(SESSION_KEY) === PASS) return;
-  document.body.style.display = 'none';
-  const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:#0e1117;display:flex;align-items:center;justify-content:center;z-index:9999;font-family:DM Sans,sans-serif;';
-  overlay.innerHTML = `
-    <div style="background:#161b27;border:1px solid rgba(255,255,255,0.07);border-radius:24px;padding:40px;max-width:340px;width:90%;text-align:center;">
-      <div style="font-family:Playfair Display,serif;font-size:1.5rem;font-weight:700;color:#e8c547;margin-bottom:8px;">Scott's Dashboard</div>
-      <div style="font-size:0.85rem;color:#8a8f9e;margin-bottom:28px;">Enter your password to continue</div>
-      <input id="pw-input" type="password" placeholder="Password" style="width:100%;background:#0e1117;border:1px solid rgba(255,255,255,0.07);border-radius:12px;color:#e8e6df;font-family:DM Sans,sans-serif;font-size:1rem;padding:14px 16px;outline:none;text-align:center;margin-bottom:12px;">
-      <button id="pw-btn" style="width:100%;padding:14px;border-radius:12px;border:none;background:#e8c547;color:#0e1117;font-family:DM Sans,sans-serif;font-size:1rem;font-weight:700;cursor:pointer;">Unlock</button>
-      <div id="pw-error" style="color:#e05c5c;font-size:0.8rem;margin-top:10px;display:none;">Incorrect password</div>
-    </div>`;
-  document.body.appendChild(overlay);
+  const LAST_ACTIVE_KEY = 'sdb_last_active';
+  const TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 
-  function tryUnlock() {
-    const val = document.getElementById('pw-input').value;
-    if (val === PASS) {
-      sessionStorage.setItem(SESSION_KEY, PASS);
-      overlay.remove();
-      document.body.style.display = '';
-    } else {
-      document.getElementById('pw-error').style.display = 'block';
-      document.getElementById('pw-input').value = '';
-      document.getElementById('pw-input').focus();
+  function showLockScreen() {
+    sessionStorage.removeItem(SESSION_KEY);
+    document.body.style.display = 'none';
+    // Remove existing overlay if any
+    const existing = document.getElementById('pw-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'pw-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:#0e1117;display:flex;align-items:center;justify-content:center;z-index:9999;font-family:DM Sans,sans-serif;';
+    overlay.innerHTML = `
+      <div style="background:#161b27;border:1px solid rgba(255,255,255,0.07);border-radius:24px;padding:40px;max-width:340px;width:90%;text-align:center;">
+        <div style="font-family:Playfair Display,serif;font-size:1.5rem;font-weight:700;color:#e8c547;margin-bottom:8px;">Scott's Dashboard</div>
+        <div style="font-size:0.85rem;color:#8a8f9e;margin-bottom:28px;">Enter your password to continue</div>
+        <input id="pw-input" type="password" placeholder="Password" style="width:100%;background:#0e1117;border:1px solid rgba(255,255,255,0.07);border-radius:12px;color:#e8e6df;font-family:DM Sans,sans-serif;font-size:1rem;padding:14px 16px;outline:none;text-align:center;margin-bottom:12px;">
+        <button id="pw-btn" style="width:100%;padding:14px;border-radius:12px;border:none;background:#e8c547;color:#0e1117;font-family:DM Sans,sans-serif;font-size:1rem;font-weight:700;cursor:pointer;">Unlock</button>
+        <div id="pw-error" style="color:#e05c5c;font-size:0.8rem;margin-top:10px;display:none;">Incorrect password</div>
+      </div>`;
+    document.body.appendChild(overlay);
+    document.body.style.display = '';
+
+    function tryUnlock() {
+      const val = document.getElementById('pw-input').value;
+      if (val === PASS) {
+        sessionStorage.setItem(SESSION_KEY, PASS);
+        sessionStorage.setItem(LAST_ACTIVE_KEY, Date.now());
+        overlay.remove();
+        document.body.style.display = '';
+        startActivityTracking();
+      } else {
+        document.getElementById('pw-error').style.display = 'block';
+        document.getElementById('pw-input').value = '';
+        document.getElementById('pw-input').focus();
+      }
+    }
+
+    document.getElementById('pw-btn').onclick = tryUnlock;
+    document.getElementById('pw-input').addEventListener('keydown', e => { if (e.key === 'Enter') tryUnlock(); });
+    setTimeout(() => document.getElementById('pw-input')?.focus(), 100);
+  }
+
+  function checkTimeout() {
+    const lastActive = parseInt(sessionStorage.getItem(LAST_ACTIVE_KEY) || '0');
+    if (Date.now() - lastActive > TIMEOUT_MS) {
+      showLockScreen();
     }
   }
 
-  document.getElementById('pw-btn').onclick = tryUnlock;
-  document.getElementById('pw-input').addEventListener('keydown', e => { if (e.key === 'Enter') tryUnlock(); });
-  document.body.style.display = '';
+  function resetTimer() {
+    sessionStorage.setItem(LAST_ACTIVE_KEY, Date.now());
+  }
+
+  function startActivityTracking() {
+    // Reset timer on any user interaction
+    ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(evt => {
+      document.addEventListener(evt, resetTimer, { passive: true });
+    });
+    // Check every minute if timeout has elapsed
+    setInterval(checkTimeout, 60 * 1000);
+  }
+
+  // On load — check if already authed and not timed out
+  const isAuthed = sessionStorage.getItem(SESSION_KEY) === PASS;
+  const lastActive = parseInt(sessionStorage.getItem(LAST_ACTIVE_KEY) || '0');
+  const timedOut = Date.now() - lastActive > TIMEOUT_MS;
+
+  if (isAuthed && !timedOut) {
+    resetTimer();
+    startActivityTracking();
+  } else {
+    showLockScreen();
+  }
 })();
 </script>
 </body>
