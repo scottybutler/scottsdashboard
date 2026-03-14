@@ -192,6 +192,7 @@
     <button class="nav-tab active" onclick="showPage('dashboard')">Home</button>
     <button class="nav-tab" onclick="showPage('stack')">Stack</button>
     <button class="nav-tab" onclick="showPage('planner')">Planner</button>
+    <button class="nav-tab" onclick="showPage('todo')">To Do</button>
     <button class="nav-tab" onclick="showPage('journal')">Journal</button>
     <button class="nav-tab" onclick="showPage('weight')">Weight</button>
     <button class="nav-tab" onclick="showPage('parkrun')">Parkrun</button>
@@ -307,6 +308,64 @@
   <div style="margin-top:32px;">
     <div class="section-title">Past Plans</div>
     <div id="planner-history-list"></div>
+  </div>
+</div>
+
+<!-- TODO PAGE -->
+<div id="page-todo" class="page">
+  <div class="section-title">Daily To Do</div>
+  <p style="color:var(--muted);font-size:0.85rem;margin-bottom:20px;" id="todo-date-display"></p>
+
+  <!-- ONE THING -->
+  <div style="background:linear-gradient(135deg,#1a2235,#1e2a3a);border:1px solid rgba(232,197,71,0.25);border-radius:16px;padding:20px 22px;margin-bottom:16px;">
+    <div class="planner-label" style="color:var(--accent);margin-bottom:10px;">🎯 One Thing <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0;">Your single most important task today</span></div>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <input type="text" id="todo-one-thing-input" placeholder="What is your One Thing today?" style="flex:1;">
+      <button class="btn btn-primary" style="padding:12px 16px;white-space:nowrap;" onclick="setOneThing()">Set</button>
+    </div>
+    <div id="todo-one-thing-display" style="display:none;margin-top:12px;">
+      <div class="check-item" id="todo-one-thing-item" onclick="toggleTodoItem('one_thing', this)">
+        <div class="check-box">
+          <svg width="12" height="10" viewBox="0 0 12 10" fill="none"><path d="M1 5l3.5 3.5L11 1" stroke="#0e1117" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="check-label" id="todo-one-thing-label"></div>
+        <button onclick="event.stopPropagation();deleteOneThing()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:4px;">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GOALS & PRIORITIES -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px 22px;margin-bottom:16px;">
+    <div class="planner-label" style="margin-bottom:10px;">🏆 Goals & Priorities</div>
+    <div style="display:flex;gap:10px;margin-bottom:12px;">
+      <input type="text" id="todo-goal-input" placeholder="Add a goal or priority..." style="flex:1;">
+      <button class="btn btn-secondary" style="padding:12px 16px;white-space:nowrap;" onclick="addTodoItem('goals')">Add</button>
+    </div>
+    <div id="todo-goals-list"></div>
+  </div>
+
+  <!-- LOW HANGING FRUIT -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px 22px;margin-bottom:24px;">
+    <div class="planner-label" style="margin-bottom:10px;">🍋 Low Hanging Fruit <span>Quick wins that pack a punch</span></div>
+    <div style="display:flex;gap:10px;margin-bottom:12px;">
+      <input type="text" id="todo-lhf-input" placeholder="Add a quick win..." style="flex:1;">
+      <button class="btn btn-secondary" style="padding:12px 16px;white-space:nowrap;" onclick="addTodoItem('lhf')">Add</button>
+    </div>
+    <div id="todo-lhf-list"></div>
+  </div>
+
+  <!-- PROGRESS & ACTIONS -->
+  <div id="todo-progress-wrap" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 20px;margin-bottom:20px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <div style="font-size:0.78rem;color:var(--muted);" id="todo-progress-label">0 of 0 complete</div>
+      <div style="font-size:0.78rem;color:var(--accent);font-weight:600;" id="todo-pct">0%</div>
+    </div>
+    <div class="progress-bar-wrap"><div class="progress-bar" id="todo-progress-bar" style="width:0%"></div></div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="saveTodoAndEmail()">Save & Email List</button>
+    <button class="btn btn-danger" onclick="clearTodo()">Clear All</button>
   </div>
 </div>
 
@@ -567,13 +626,14 @@ function showPage(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('page-' + id).classList.add('active');
-  const pageMap = { dashboard: 0, stack: 1, planner: 2, journal: 3, weight: 4, parkrun: 5 };
+  const pageMap = { dashboard: 0, stack: 1, planner: 2, todo: 3, journal: 4, weight: 5, parkrun: 6 };
   document.querySelectorAll('.nav-tab')[pageMap[id]]?.classList.add('active');
   if (id === 'planner') initPlanner();
   if (id === 'weight') renderWeightHistory();
   if (id === 'stack') renderStackHistory();
   if (id === 'journal') initJournal();
   if (id === 'parkrun') initParkrun();
+  if (id === 'todo') initTodo();
 }
 
 // ===== QUOTES =====
@@ -1016,6 +1076,8 @@ async function savePlanner() {
     setSyncStatus('synced', 'Planner saved ✓');
     toast('Planner saved! Sending email... 📧');
     renderPlannerHistory();
+    // Populate To Do from planner
+    await populateTodoFromPlanner(data);
   } catch(e) {
     setSyncStatus('error', 'Could not save');
     toast('Save failed — check connection', 'var(--red)');
@@ -1036,6 +1098,47 @@ function clearPlanner() {
   ['p-one-thing','p-goals','p-ticks','p-actions','p-who','p-prepared','p-appreciation'].forEach(id => {
     document.getElementById(id).value = '';
   });
+}
+
+async function populateTodoFromPlanner(data) {
+  // Build todo state from planner fields
+  const newTodo = { one_thing: null, one_thing_done: false, goals: [], lhf: [] };
+
+  // One Thing
+  if (data.one_thing?.trim()) {
+    newTodo.one_thing = data.one_thing.trim();
+  }
+
+  // Goals & Priorities — split by newline
+  if (data.goals?.trim()) {
+    data.goals.split('\n').forEach(line => {
+      const clean = line.replace(/^[\d\.\-\*\s]+/, '').trim();
+      if (clean) newTodo.goals.push({ text: clean, done: false });
+    });
+  }
+
+  // Low Hanging Fruit — from ticks field, split by newline or comma
+  if (data.ticks?.trim()) {
+    data.ticks.split(/[\n,]/).forEach(line => {
+      const clean = line.replace(/^[\d\.\-\*\s]+/, '').trim();
+      if (clean) newTodo.lhf.push({ text: clean, done: false });
+    });
+  }
+
+  // Check if today's todo already has entries — ask before overwriting
+  try {
+    const existing = await sbGet('todo', `date=eq.${getTodayKey()}`);
+    if (existing.length) {
+      const hasContent = existing[0].state?.one_thing ||
+        existing[0].state?.goals?.length ||
+        existing[0].state?.lhf?.length;
+      if (hasContent && !confirm('Your To Do list already has items today. Overwrite with planner data?')) return;
+    }
+  } catch(e) {}
+
+  todoState = newTodo;
+  await sbUpsert('todo', { date: getTodayKey(), state: todoState });
+  toast('To Do populated from planner! 📋');
 }
 
 async function renderPlannerHistory() {
@@ -1427,6 +1530,178 @@ async function renderParkrunHistory() {
   }
 }
 
+// ===== TODO =====
+let todoState = { one_thing: null, one_thing_done: false, goals: [], lhf: [] };
+
+function getTodoKey() { return 'todo-' + getTodayKey(); }
+
+async function initTodo() {
+  document.getElementById('todo-date-display').textContent = new Date().toLocaleDateString('en-AU', { timeZone: AET, weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  // Load from Supabase
+  try {
+    const rows = await sbGet('todo', `date=eq.${getTodayKey()}`);
+    if (rows.length) todoState = rows[0].state;
+    else todoState = { one_thing: null, one_thing_done: false, goals: [], lhf: [] };
+  } catch(e) {
+    todoState = { one_thing: null, one_thing_done: false, goals: [], lhf: [] };
+  }
+  renderTodo();
+}
+
+function renderTodo() {
+  // One Thing
+  const otDisplay = document.getElementById('todo-one-thing-display');
+  const otInput = document.getElementById('todo-one-thing-input');
+  if (todoState.one_thing) {
+    otDisplay.style.display = 'block';
+    otInput.style.display = 'none';
+    document.querySelector('#todo-one-thing-display + div, #todo-one-thing-input')?.closest?.('.btn');
+    document.getElementById('todo-one-thing-label').textContent = todoState.one_thing;
+    const item = document.getElementById('todo-one-thing-item');
+    item.classList.toggle('checked', todoState.one_thing_done);
+  } else {
+    otDisplay.style.display = 'none';
+    otInput.style.display = 'block';
+    otInput.value = '';
+  }
+
+  // Goals
+  const goalsList = document.getElementById('todo-goals-list');
+  goalsList.innerHTML = todoState.goals.length ? todoState.goals.map((g, i) =>
+    `<div class="check-item ${g.done ? 'checked' : ''}" onclick="toggleTodoItem('goals', this, ${i})" style="margin-bottom:8px;">
+      <div class="check-box"><svg width="12" height="10" viewBox="0 0 12 10" fill="none"><path d="M1 5l3.5 3.5L11 1" stroke="#0e1117" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="check-label">${g.text}</div>
+      <button onclick="event.stopPropagation();deleteTodoItem('goals',${i})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:4px;">✕</button>
+    </div>`
+  ).join('') : '<div style="font-size:0.82rem;color:var(--muted);padding:8px 0;">No goals added yet</div>';
+
+  // Low Hanging Fruit
+  const lhfList = document.getElementById('todo-lhf-list');
+  lhfList.innerHTML = todoState.lhf.length ? todoState.lhf.map((l, i) =>
+    `<div class="check-item ${l.done ? 'checked' : ''}" onclick="toggleTodoItem('lhf', this, ${i})" style="margin-bottom:8px;">
+      <div class="check-box"><svg width="12" height="10" viewBox="0 0 12 10" fill="none"><path d="M1 5l3.5 3.5L11 1" stroke="#0e1117" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="check-label">${l.text}</div>
+      <button onclick="event.stopPropagation();deleteTodoItem('lhf',${i})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:4px;">✕</button>
+    </div>`
+  ).join('') : '<div style="font-size:0.82rem;color:var(--muted);padding:8px 0;">No quick wins added yet</div>';
+
+  // Progress
+  const total = (todoState.one_thing ? 1 : 0) + todoState.goals.length + todoState.lhf.length;
+  const done = (todoState.one_thing_done ? 1 : 0) + todoState.goals.filter(g => g.done).length + todoState.lhf.filter(l => l.done).length;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  document.getElementById('todo-progress-wrap').style.display = total ? 'block' : 'none';
+  document.getElementById('todo-progress-label').textContent = `${done} of ${total} complete`;
+  document.getElementById('todo-pct').textContent = pct + '%';
+  document.getElementById('todo-progress-bar').style.width = pct + '%';
+}
+
+function setOneThing() {
+  const val = document.getElementById('todo-one-thing-input').value.trim();
+  if (!val) return;
+  todoState.one_thing = val;
+  todoState.one_thing_done = false;
+  renderTodo();
+  autoSaveTodo();
+}
+
+function deleteOneThing() {
+  todoState.one_thing = null;
+  todoState.one_thing_done = false;
+  renderTodo();
+  autoSaveTodo();
+}
+
+function addTodoItem(section) {
+  const inputId = section === 'goals' ? 'todo-goal-input' : 'todo-lhf-input';
+  const val = document.getElementById(inputId).value.trim();
+  if (!val) return;
+  todoState[section].push({ text: val, done: false });
+  document.getElementById(inputId).value = '';
+  renderTodo();
+  autoSaveTodo();
+}
+
+function toggleTodoItem(section, el, idx) {
+  if (section === 'one_thing') {
+    todoState.one_thing_done = !todoState.one_thing_done;
+  } else {
+    todoState[section][idx].done = !todoState[section][idx].done;
+  }
+  renderTodo();
+  autoSaveTodo();
+}
+
+function deleteTodoItem(section, idx) {
+  todoState[section].splice(idx, 1);
+  renderTodo();
+  autoSaveTodo();
+}
+
+async function autoSaveTodo() {
+  try {
+    await sbUpsert('todo', { date: getTodayKey(), state: todoState });
+  } catch(e) { console.error('Todo autosave failed', e); }
+}
+
+function clearTodo() {
+  if (!confirm('Clear today\'s entire to do list?')) return;
+  todoState = { one_thing: null, one_thing_done: false, goals: [], lhf: [] };
+  renderTodo();
+  autoSaveTodo();
+}
+
+async function saveTodoAndEmail() {
+  await autoSaveTodo();
+  setSyncStatus('syncing', 'Saving & sending...');
+
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-AU', { timeZone: AET, weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  const tick = (done) => done ? '✅' : '⬜';
+
+  const lines = [
+    `DAILY TO DO — ${dateStr}`,
+    `${'─'.repeat(40)}`,
+    ``,
+    `🎯 ONE THING`,
+    todoState.one_thing ? `${tick(todoState.one_thing_done)} ${todoState.one_thing}` : '(not set)',
+    ``,
+    `🏆 GOALS & PRIORITIES`,
+    ...(todoState.goals.length ? todoState.goals.map(g => `${tick(g.done)} ${g.text}`) : ['(none added)']),
+    ``,
+    `🍋 LOW HANGING FRUIT`,
+    ...(todoState.lhf.length ? todoState.lhf.map(l => `${tick(l.done)} ${l.text}`) : ['(none added)']),
+    ``,
+    `${'─'.repeat(40)}`,
+    `Sent from Scott's Success Dashboard`,
+  ];
+
+  const total = (todoState.one_thing ? 1 : 0) + todoState.goals.length + todoState.lhf.length;
+  const done = (todoState.one_thing_done ? 1 : 0) + todoState.goals.filter(g => g.done).length + todoState.lhf.filter(l => l.done).length;
+  const subject = `Daily To Do — ${dateStr} (${done}/${total} complete)`;
+
+  try {
+    await Promise.all(['scottybutler@gmail.com', 'scott.butler@communitybikehub.com.au'].map(to_email =>
+      emailjs.send('service_gggbv0k', 'template_59y1boq', {
+        subject, message: lines.join('\n'), to_email, name: 'Scott'
+      })
+    ));
+    setSyncStatus('synced', 'To Do saved & emailed ✓');
+    toast('Saved & emailed! ✅📧');
+  } catch(e) {
+    setSyncStatus('error', 'Saved but email failed');
+    toast('Saved but email failed', 'var(--red)');
+  }
+}
+
+// Enter key support for todo inputs
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && document.getElementById('page-todo').classList.contains('active')) {
+    if (document.activeElement.id === 'todo-one-thing-input') setOneThing();
+    if (document.activeElement.id === 'todo-goal-input') addTodoItem('goals');
+    if (document.activeElement.id === 'todo-lhf-input') addTodoItem('lhf');
+  }
+});
+
 // ===== KEYBOARD =====
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && e.ctrlKey && stackActive) stackNext();
@@ -1435,9 +1710,9 @@ document.addEventListener('keydown', (e) => {
 // ===== INIT =====
 async function init() {
   const now = getAETDate();
-  const hour = now.getHours();
+  const hour = parseInt(new Date().toLocaleString('en-AU', { timeZone: AET, hour: 'numeric', hour12: false }));
   document.getElementById('time-greeting').textContent = hour < 12 ? 'Morning' : hour < 17 ? 'Afternoon' : 'Evening';
-  document.getElementById('today-date').textContent = now.toLocaleDateString('en-AU', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  document.getElementById('today-date').textContent = new Date().toLocaleDateString('en-AU', { timeZone: AET, weekday:'long', day:'numeric', month:'long', year:'numeric' });
 
   setSyncStatus('syncing', 'Connecting to cloud...');
   try {
