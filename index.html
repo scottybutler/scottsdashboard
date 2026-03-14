@@ -194,6 +194,7 @@
     <button class="nav-tab" onclick="showPage('planner')">Planner</button>
     <button class="nav-tab" onclick="showPage('todo')">To Do</button>
     <button class="nav-tab" onclick="showPage('journal')">Journal</button>
+    <button class="nav-tab" onclick="showPage('business')">Business</button>
     <button class="nav-tab" onclick="showPage('weight')">Weight</button>
     <button class="nav-tab" onclick="showPage('parkrun')">Parkrun</button>
   </div>
@@ -488,6 +489,76 @@
   <div id="pr-history-list"></div>
 </div>
 
+<!-- BUSINESS PAGE -->
+<div id="page-business" class="page">
+  <div class="section-title">💼 Business</div>
+
+  <!-- GOALS BOARD -->
+  <div class="section-title" style="margin-top:0;">Goals Board</div>
+
+  <!-- Community Grocer -->
+  <div style="background:var(--surface);border:1px solid rgba(93,187,122,0.2);border-radius:14px;padding:18px 20px;margin-bottom:12px;">
+    <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--green);margin-bottom:12px;">🛒 The Community Grocer</div>
+    <div id="goals-grocer"></div>
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <input type="text" id="goal-grocer-input" placeholder="Add a goal..." style="flex:1;font-size:0.88rem;padding:10px 12px;">
+      <button class="btn btn-secondary" style="padding:10px 14px;" onclick="addGoal('grocer')">Add</button>
+    </div>
+  </div>
+
+  <!-- Community Bike Hub -->
+  <div style="background:var(--surface);border:1px solid rgba(79,163,209,0.2);border-radius:14px;padding:18px 20px;margin-bottom:24px;">
+    <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent2);margin-bottom:12px;">🚲 Community Bike Hub</div>
+    <div id="goals-bikehub"></div>
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <input type="text" id="goal-bikehub-input" placeholder="Add a goal..." style="flex:1;font-size:0.88rem;padding:10px 12px;">
+      <button class="btn btn-secondary" style="padding:10px 14px;" onclick="addGoal('bikehub')">Add</button>
+    </div>
+  </div>
+
+  <!-- WIN LOG -->
+  <div class="section-title">Win Log</div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:24px;">
+    <div style="font-size:0.78rem;color:var(--muted);margin-bottom:12px;">Record your wins for today — big or small</div>
+    <textarea id="win-input" placeholder="What did you achieve today? What went well? What are you proud of?..." style="min-height:120px;margin-bottom:12px;"></textarea>
+    <button class="btn btn-primary" onclick="saveWin()">Log Today's Win</button>
+  </div>
+  <div id="win-history"></div>
+
+  <!-- WEEKLY REVIEW -->
+  <div class="section-title" style="margin-top:32px;">Weekly Review</div>
+  <p style="color:var(--muted);font-size:0.82rem;margin-bottom:16px;">A structured Sunday check-in across your four CORE domains</p>
+
+  <div id="weekly-review-form">
+    <div class="planner-field" style="margin-bottom:12px;">
+      <div class="planner-label" style="color:var(--accent2);">💪 BODY <span>How did you show up physically this week?</span></div>
+      <textarea id="wr-body" placeholder="Exercise, nutrition, sleep, energy..." style="min-height:80px;"></textarea>
+    </div>
+    <div class="planner-field" style="margin-bottom:12px;">
+      <div class="planner-label" style="color:var(--accent);">🧘 BEING <span>What was your mental and emotional experience this week?</span></div>
+      <textarea id="wr-being" placeholder="Mindset, emotions, growth, stacks..." style="min-height:80px;"></textarea>
+    </div>
+    <div class="planner-field" style="margin-bottom:12px;">
+      <div class="planner-label" style="color:var(--green);">❤️ BALANCE <span>How were your key relationships this week?</span></div>
+      <textarea id="wr-balance" placeholder="Sons, Angie, family, friends, team..." style="min-height:80px;"></textarea>
+    </div>
+    <div class="planner-field" style="margin-bottom:20px;">
+      <div class="planner-label" style="color:var(--red);">💼 BUSINESS <span>What did you build and contribute this week?</span></div>
+      <textarea id="wr-business" placeholder="Community Bike Hub, The Community Grocer, wins, progress..." style="min-height:80px;"></textarea>
+    </div>
+    <div class="planner-field" style="margin-bottom:20px;">
+      <div class="planner-label">⭐ ONE THING <span>What is your single focus for next week?</span></div>
+      <input type="text" id="wr-focus" placeholder="Next week my one thing is...">
+    </div>
+    <button class="btn btn-primary" onclick="saveWeeklyReview()">Save Weekly Review</button>
+  </div>
+
+  <div style="margin-top:28px;">
+    <div class="section-title">Past Reviews</div>
+    <div id="weekly-review-history"></div>
+  </div>
+</div>
+
 <!-- WEIGHT PAGE -->
 <div id="page-weight" class="page">
   <div class="section-title">Weight Tracker</div>
@@ -626,7 +697,7 @@ function showPage(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('page-' + id).classList.add('active');
-  const pageMap = { dashboard: 0, stack: 1, planner: 2, todo: 3, journal: 4, weight: 5, parkrun: 6 };
+  const pageMap = { dashboard: 0, stack: 1, planner: 2, todo: 3, journal: 4, business: 5, weight: 6, parkrun: 7 };
   document.querySelectorAll('.nav-tab')[pageMap[id]]?.classList.add('active');
   if (id === 'planner') initPlanner();
   if (id === 'weight') renderWeightHistory();
@@ -634,6 +705,7 @@ function showPage(id) {
   if (id === 'journal') initJournal();
   if (id === 'parkrun') initParkrun();
   if (id === 'todo') initTodo();
+  if (id === 'business') initBusiness();
 }
 
 // ===== QUOTES =====
@@ -1701,6 +1773,198 @@ document.addEventListener('keydown', (e) => {
     if (document.activeElement.id === 'todo-lhf-input') addTodoItem('lhf');
   }
 });
+
+// ===== BUSINESS =====
+const DEFAULT_GOALS = {
+  grocer: [
+    { id: 1, text: 'Meet all Board Members personally', done: false }
+  ],
+  bikehub: [
+    { id: 2, text: 'Bike Shop Data Recording', done: false },
+    { id: 3, text: 'NDIS Marketing Strategy', done: false }
+  ]
+};
+
+let bizGoals = { grocer: [], bikehub: [] };
+
+async function initBusiness() {
+  // Load goals
+  try {
+    const rows = await sbGet('biz_goals', 'order=id.asc');
+    if (rows.length) {
+      bizGoals.grocer = rows.filter(r => r.org === 'grocer');
+      bizGoals.bikehub = rows.filter(r => r.org === 'bikehub');
+    } else {
+      // Seed defaults
+      for (const g of DEFAULT_GOALS.grocer) {
+        await sbUpsert('biz_goals', { ...g, org: 'grocer' });
+      }
+      for (const g of DEFAULT_GOALS.bikehub) {
+        await sbUpsert('biz_goals', { ...g, org: 'bikehub' });
+      }
+      bizGoals = { grocer: DEFAULT_GOALS.grocer.map(g => ({ ...g, org: 'grocer' })), bikehub: DEFAULT_GOALS.bikehub.map(g => ({ ...g, org: 'bikehub' })) };
+    }
+  } catch(e) {
+    bizGoals = { grocer: DEFAULT_GOALS.grocer.map(g => ({ ...g, org: 'grocer' })), bikehub: DEFAULT_GOALS.bikehub.map(g => ({ ...g, org: 'bikehub' })) };
+  }
+  renderGoals();
+  renderWinHistory();
+  renderWeeklyReviewHistory();
+}
+
+function renderGoals() {
+  ['grocer', 'bikehub'].forEach(org => {
+    const el = document.getElementById('goals-' + org);
+    const goals = bizGoals[org];
+    if (!goals.length) {
+      el.innerHTML = '<div style="font-size:0.82rem;color:var(--muted);padding:4px 0;">No goals yet — add one below</div>';
+      return;
+    }
+    el.innerHTML = goals.map((g, i) =>
+      `<div class="check-item ${g.done ? 'checked' : ''}" onclick="toggleGoal('${org}', ${i})" style="margin-bottom:8px;">
+        <div class="check-box"><svg width="12" height="10" viewBox="0 0 12 10" fill="none"><path d="M1 5l3.5 3.5L11 1" stroke="#0e1117" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="check-label">${g.text}</div>
+        <button onclick="event.stopPropagation();deleteGoal('${org}',${i})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:4px;">✕</button>
+      </div>`
+    ).join('');
+  });
+}
+
+async function addGoal(org) {
+  const inputId = `goal-${org}-input`;
+  const val = document.getElementById(inputId).value.trim();
+  if (!val) return;
+  const id = Date.now();
+  const goal = { id, text: val, done: false, org };
+  bizGoals[org].push(goal);
+  document.getElementById(inputId).value = '';
+  try { await sbUpsert('biz_goals', goal); } catch(e) {}
+  renderGoals();
+}
+
+async function toggleGoal(org, idx) {
+  bizGoals[org][idx].done = !bizGoals[org][idx].done;
+  renderGoals();
+  try { await sbUpsert('biz_goals', bizGoals[org][idx]); } catch(e) {}
+}
+
+async function deleteGoal(org, idx) {
+  const goal = bizGoals[org][idx];
+  bizGoals[org].splice(idx, 1);
+  renderGoals();
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/biz_goals?id=eq.${goal.id}`, {
+      method: 'DELETE', headers
+    });
+  } catch(e) {}
+}
+
+// WIN LOG
+async function saveWin() {
+  const text = document.getElementById('win-input').value.trim();
+  if (!text) { toast('Write something first!', 'var(--red)'); return; }
+  const record = { id: Date.now(), date: getTodayKey(), ts: new Date().toISOString(), text };
+  setSyncStatus('syncing', 'Saving win...');
+  try {
+    await sbUpsert('win_log', record);
+    setSyncStatus('synced', 'Win logged! ✓');
+    toast('Win logged! 🏆');
+    document.getElementById('win-input').value = '';
+    renderWinHistory();
+  } catch(e) {
+    setSyncStatus('error', 'Could not save');
+    toast('Save failed', 'var(--red)');
+  }
+}
+
+async function renderWinHistory() {
+  const el = document.getElementById('win-history');
+  try {
+    const wins = await sbGet('win_log', 'order=ts.desc&limit=20');
+    if (!wins.length) {
+      el.innerHTML = '<div class="empty-state"><div class="icon">🏆</div><p>No wins logged yet — record your first one!</p></div>';
+      return;
+    }
+    el.innerHTML = wins.map(w => {
+      const d = formatAETDate(w.ts, { weekday:'short', day:'numeric', month:'short' });
+      const t = formatAETTime(w.ts, { hour:'2-digit', minute:'2-digit' });
+      return `<div class="stack-history-item" style="margin-bottom:8px;">
+        <div style="font-size:0.72rem;color:var(--accent);font-weight:600;margin-bottom:4px;">🏆 ${d} at ${t}</div>
+        <div style="font-size:0.88rem;color:var(--text);line-height:1.5;">${w.text}</div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>Could not load wins</p></div>';
+  }
+}
+
+// WEEKLY REVIEW
+async function saveWeeklyReview() {
+  const data = {
+    body: document.getElementById('wr-body').value,
+    being: document.getElementById('wr-being').value,
+    balance: document.getElementById('wr-balance').value,
+    business: document.getElementById('wr-business').value,
+    focus: document.getElementById('wr-focus').value,
+  };
+  const hasContent = Object.values(data).some(v => v.trim());
+  if (!hasContent) { toast('Add something to your review first!', 'var(--red)'); return; }
+
+  const record = { id: Date.now(), date: getTodayKey(), ts: new Date().toISOString(), data };
+  setSyncStatus('syncing', 'Saving weekly review...');
+  try {
+    await sbUpsert('weekly_review', record);
+    setSyncStatus('synced', 'Weekly review saved ✓');
+    toast('Weekly review saved! 📋');
+    ['wr-body','wr-being','wr-balance','wr-business','wr-focus'].forEach(id => document.getElementById(id).value = '');
+    renderWeeklyReviewHistory();
+  } catch(e) {
+    setSyncStatus('error', 'Could not save');
+    toast('Save failed', 'var(--red)');
+  }
+}
+
+async function renderWeeklyReviewHistory() {
+  const el = document.getElementById('weekly-review-history');
+  try {
+    const reviews = await sbGet('weekly_review', 'order=ts.desc&limit=10');
+    if (!reviews.length) {
+      el.innerHTML = '<div class="empty-state"><div class="icon">📋</div><p>No weekly reviews yet.</p></div>';
+      return;
+    }
+    el.innerHTML = reviews.map(r => {
+      const d = formatAETDate(r.ts, { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+      return `<div class="stack-history-item" onclick="viewWeeklyReview(${r.id})" style="margin-bottom:8px;">
+        <div class="stack-history-title">${d}</div>
+        <div class="stack-history-meta">${r.data.focus ? '⭐ ' + r.data.focus : 'No focus set'}</div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>Could not load reviews</p></div>';
+  }
+}
+
+async function viewWeeklyReview(id) {
+  try {
+    const rows = await sbGet('weekly_review', `id=eq.${id}`);
+    if (!rows.length) return;
+    const r = rows[0];
+    const d = formatAETDate(r.ts, { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    document.getElementById('modal-title').textContent = 'Weekly Review';
+    document.getElementById('modal-date').textContent = d;
+    document.getElementById('modal-edit-btn').style.display = 'none';
+    document.getElementById('modal-save-btn').style.display = 'none';
+    const fields = [
+      ['💪 BODY', r.data.body], ['🧘 BEING', r.data.being],
+      ['❤️ BALANCE', r.data.balance], ['💼 BUSINESS', r.data.business],
+      ['⭐ NEXT WEEK FOCUS', r.data.focus]
+    ];
+    document.getElementById('modal-content').innerHTML = fields.filter(f => f[1]?.trim()).map(f =>
+      `<div class="modal-q"><div class="modal-q-label">${f[0]}</div><div class="modal-q-a">${f[1]}</div></div>`
+    ).join('');
+    document.getElementById('stack-modal').classList.add('open');
+  } catch(e) { toast('Could not load review', 'var(--red)'); }
+}
 
 // ===== KEYBOARD =====
 document.addEventListener('keydown', (e) => {
