@@ -6,6 +6,7 @@
 <title>Scott's Success Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <style>
   :root {
     --bg: #0e1117;
@@ -193,6 +194,7 @@
     <button class="nav-tab" onclick="showPage('planner')">Planner</button>
     <button class="nav-tab" onclick="showPage('journal')">Journal</button>
     <button class="nav-tab" onclick="showPage('weight')">Weight</button>
+    <button class="nav-tab" onclick="showPage('parkrun')">Parkrun</button>
   </div>
 </nav>
 
@@ -217,33 +219,9 @@
   <div class="progress-label" id="progress-label">Loading...</div>
   <div class="checklist" id="checklist"></div>
 
-  <div class="section-title">Quick Actions</div>
-  <div class="quick-actions">
-    <div class="action-card" onclick="showPage('stack')">
-      <div class="action-icon">🧠</div>
-      <div class="action-name">Start a Stack</div>
-      <div class="action-desc">Process a trigger</div>
-    </div>
-    <div class="action-card" onclick="showPage('planner')">
-      <div class="action-icon">📋</div>
-      <div class="action-name">Daily Planner</div>
-      <div class="action-desc">Plan your day</div>
-    </div>
-    <div class="action-card" onclick="showPage('weight')">
-      <div class="action-icon">⚖️</div>
-      <div class="action-name">Log Weight</div>
-      <div class="action-desc">Track progress</div>
-    </div>
-    <div class="action-card" onclick="showPage('stack'); setTimeout(showHistory,100)">
-      <div class="action-icon">📖</div>
-      <div class="action-name">Stack History</div>
-      <div class="action-desc">Review past stacks</div>
-    </div>
-    <div class="action-card" onclick="showPage('journal')">
-      <div class="action-icon">📓</div>
-      <div class="action-name">Journal</div>
-      <div class="action-desc">Reflect on your CORE</div>
-    </div>
+  <div class="section-title">Daily Motivation</div>
+  <div style="margin-bottom:28px;">
+    <iframe data-testid="embed-iframe" style="border-radius:12px" src="https://open.spotify.com/embed/show/4wV5op70r8shyT6QQsmhiU?utm_source=generator" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
   </div>
 </div>
 
@@ -399,17 +377,95 @@
   </div>
 </div>
 
+<!-- PARKRUN PAGE -->
+<div id="page-parkrun" class="page">
+  <div class="section-title">🏃 Parkrun</div>
+  <p style="color:var(--muted);font-size:0.85rem;margin-bottom:20px;">Athlete <strong style="color:var(--accent);">A1288951</strong> · Tracking your 5km times</p>
+
+  <!-- STATS ROW -->
+  <div id="pr-stats" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:24px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;text-align:center;">
+      <div><div style="font-size:0.68rem;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em;">PB</div><div style="font-size:1.3rem;font-weight:700;color:var(--accent);" id="pr-pb">-</div></div>
+      <div><div style="font-size:0.68rem;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em;">Latest</div><div style="font-size:1.3rem;font-weight:700;" id="pr-latest">-</div></div>
+      <div><div style="font-size:0.68rem;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em;">Runs</div><div style="font-size:1.3rem;font-weight:700;" id="pr-count">-</div></div>
+      <div><div style="font-size:0.68rem;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em;">Avg</div><div style="font-size:1.3rem;font-weight:700;" id="pr-avg">-</div></div>
+    </div>
+  </div>
+
+  <!-- CHART -->
+  <div id="pr-chart-wrap" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:24px;">
+    <div style="font-size:0.78rem;color:var(--accent);font-weight:600;letter-spacing:0.07em;text-transform:uppercase;margin-bottom:14px;">Time Trend</div>
+    <canvas id="pr-chart" height="120"></canvas>
+  </div>
+
+  <!-- ADD RESULT -->
+  <div class="section-title">Log a Result</div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:24px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+      <div>
+        <div class="planner-label" style="margin-bottom:6px;">📅 Date</div>
+        <input type="date" id="pr-date" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:DM Sans,sans-serif;font-size:0.9rem;padding:10px 12px;outline:none;">
+      </div>
+      <div>
+        <div class="planner-label" style="margin-bottom:6px;">⏱️ Time (mm:ss)</div>
+        <input type="text" id="pr-time" placeholder="e.g. 27:11" maxlength="5">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+      <div>
+        <div class="planner-label" style="margin-bottom:6px;">🏅 Position</div>
+        <input type="number" id="pr-position" placeholder="e.g. 86">
+      </div>
+      <div>
+        <div class="planner-label" style="margin-bottom:6px;">📍 Course</div>
+        <input type="text" id="pr-course" placeholder="e.g. Torquay">
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="saveParkrun()">Save Result</button>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="section-title">All Results</div>
+  <div id="pr-history-list"></div>
+</div>
+
 <!-- WEIGHT PAGE -->
 <div id="page-weight" class="page">
   <div class="section-title">Weight Tracker</div>
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:24px;">
+
+  <!-- GOAL PROGRESS CARD -->
+  <div style="background:linear-gradient(135deg,#1a2235,#1e2a3a);border:1px solid rgba(232,197,71,0.2);border-radius:16px;padding:22px 24px;margin-bottom:20px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">
+      <div>
+        <div style="font-size:0.72rem;color:var(--accent);font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px;">Goal Progress</div>
+        <div style="font-size:0.85rem;color:var(--muted);">76kg → <strong style="color:var(--accent);">69kg</strong> by mid-May 2026</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:0.72rem;color:var(--muted);margin-bottom:2px;">To go</div>
+        <div style="font-size:1.5rem;font-weight:700;color:var(--text);" id="wg-to-go">-</div>
+      </div>
+    </div>
+    <!-- Progress bar -->
+    <div style="background:rgba(255,255,255,0.07);border-radius:20px;height:10px;margin-bottom:10px;overflow:hidden;">
+      <div id="wg-progress-bar" style="height:100%;background:linear-gradient(90deg,var(--accent2),var(--green));border-radius:20px;transition:width 0.6s cubic-bezier(0.34,1.56,0.64,1);width:0%;"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;">
+      <div style="font-size:0.72rem;color:var(--muted);" id="wg-pct">0% complete</div>
+      <div style="font-size:0.72rem;color:var(--muted);" id="wg-days-left">- days to target</div>
+    </div>
+  </div>
+
+  <!-- LOG WEIGHT -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:20px;">
     <div class="planner-label" style="margin-bottom:10px;">Log today's weight</div>
     <div class="weight-input-row">
-      <input type="number" id="weight-input" placeholder="e.g. 82.5" step="0.1" inputmode="decimal">
+      <input type="number" id="weight-input" placeholder="e.g. 75.4" step="0.1" inputmode="decimal">
       <button class="btn btn-primary" onclick="saveWeight()">Save</button>
     </div>
     <div style="font-size:0.78rem;color:var(--muted);">in kilograms</div>
   </div>
+
+  <!-- STATS -->
   <div id="weight-stats" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:24px;">
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;text-align:center;">
       <div><div style="font-size:0.72rem;color:var(--muted);margin-bottom:4px;">LATEST</div><div style="font-size:1.4rem;font-weight:700;" id="stat-latest">-</div></div>
@@ -417,6 +473,7 @@
       <div><div style="font-size:0.72rem;color:var(--muted);margin-bottom:4px;">ENTRIES</div><div style="font-size:1.4rem;font-weight:700;" id="stat-entries">-</div></div>
     </div>
   </div>
+
   <div class="section-title">History</div>
   <div id="weight-history-list"></div>
 </div>
@@ -474,7 +531,28 @@ function setSyncStatus(status, msg) {
 }
 
 // ===== UTILS =====
-function getTodayKey() { return new Date().toISOString().slice(0, 10); }
+const AET = 'Australia/Melbourne';
+
+function getAETDate() {
+  return new Date(new Date().toLocaleString('en-AU', { timeZone: AET }));
+}
+
+function getTodayKey() {
+  const d = getAETDate();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function getAETNow() {
+  return new Date().toLocaleString('en-AU', { timeZone: AET });
+}
+
+function formatAETDate(isoString, options) {
+  return new Date(isoString).toLocaleDateString('en-AU', { timeZone: AET, ...options });
+}
+
+function formatAETTime(isoString, options) {
+  return new Date(isoString).toLocaleTimeString('en-AU', { timeZone: AET, ...options });
+}
 
 function toast(msg, color) {
   const t = document.getElementById('toast');
@@ -489,12 +567,13 @@ function showPage(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('page-' + id).classList.add('active');
-  const pageMap = { dashboard: 0, stack: 1, planner: 2, journal: 3, weight: 4 };
+  const pageMap = { dashboard: 0, stack: 1, planner: 2, journal: 3, weight: 4, parkrun: 5 };
   document.querySelectorAll('.nav-tab')[pageMap[id]]?.classList.add('active');
   if (id === 'planner') initPlanner();
   if (id === 'weight') renderWeightHistory();
   if (id === 'stack') renderStackHistory();
   if (id === 'journal') initJournal();
+  if (id === 'parkrun') initParkrun();
 }
 
 // ===== QUOTES =====
@@ -756,7 +835,7 @@ async function renderStackHistory() {
       const d = new Date(s.date);
       return `<div class="stack-history-item" onclick="viewStack(${s.id})">
         <div class="stack-history-title">${s.answers.title || 'Untitled Stack'}</div>
-        <div class="stack-history-meta">${d.toLocaleDateString('en-AU', { weekday:'short', day:'numeric', month:'short', year:'numeric' })}${s.answers.person ? ' · ' + s.answers.person : ''}</div>
+        <div class="stack-history-meta">${formatAETDate(s.date, { weekday:'short', day:'numeric', month:'short', year:'numeric' })}${s.answers.person ? ' · ' + s.answers.person : ''}</div>
       </div>`;
     }).join('');
   } catch(e) {
@@ -780,9 +859,8 @@ async function viewStack(id) {
 }
 
 function renderStackModal(stack) {
-  const d = new Date(stack.date);
   document.getElementById('modal-title').textContent = stack.answers.title || 'Stack';
-  document.getElementById('modal-date').textContent = d.toLocaleDateString('en-AU', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  document.getElementById('modal-date').textContent = formatAETDate(stack.date, { weekday:'long', day:'numeric', month:'long', year:'numeric' });
 
   if (editMode) {
     const content = STACK_QUESTIONS.map((q, i) => {
@@ -905,7 +983,7 @@ async function sendPlannerEmail(data) {
 // ===== PLANNER =====
 async function initPlanner() {
   const today = getTodayKey();
-  document.getElementById('planner-date-display').textContent = new Date().toLocaleDateString('en-AU', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  document.getElementById('planner-date-display').textContent = new Date().toLocaleDateString('en-AU', { timeZone: AET, weekday:'long', day:'numeric', month:'long', year:'numeric' });
   try {
     const rows = await sbGet('planner', `date=eq.${today}`);
     if (rows.length) {
@@ -971,9 +1049,8 @@ async function renderPlannerHistory() {
       return;
     }
     el.innerHTML = past.map(r => {
-      const d = new Date(r.date);
       return `<div class="stack-history-item" onclick="viewPlanner('${r.date}')">
-        <div class="stack-history-title">${d.toLocaleDateString('en-AU', { weekday:'long', day:'numeric', month:'long' })}</div>
+        <div class="stack-history-title">${formatAETDate(r.date + 'T12:00:00', { weekday:'long', day:'numeric', month:'long' })}</div>
         <div class="stack-history-meta">${r.data.one_thing ? '🎯 ' + r.data.one_thing : 'No one thing set'}</div>
       </div>`;
     }).join('');
@@ -986,7 +1063,7 @@ async function viewPlanner(dateStr) {
     if (!rows.length) return;
     const data = rows[0].data;
     const d = new Date(dateStr);
-    document.getElementById('modal-title').textContent = d.toLocaleDateString('en-AU', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    document.getElementById('modal-title').textContent = formatAETDate(dateStr + 'T00:00:00', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
     const fields = [
       ['One Thing', data.one_thing], ['Goals & Priorities', data.goals],
       ['Quick Ticks', data.ticks], ['Actions & Ideas', data.actions],
@@ -1020,6 +1097,13 @@ async function saveWeight() {
 async function renderWeightHistory() {
   const el = document.getElementById('weight-history-list');
   el.innerHTML = '<div class="empty-state"><div class="loading-spinner"></div></div>';
+
+  // Goal constants
+  const START_WEIGHT = 76;
+  const TARGET_WEIGHT = 69;
+  const TARGET_DATE = new Date('2026-05-15T00:00:00');
+  const TOTAL_TO_LOSE = START_WEIGHT - TARGET_WEIGHT; // 7kg
+
   try {
     const entries = await sbGet('weight_entries', 'order=ts.desc&limit=30');
     if (!entries.length) {
@@ -1027,8 +1111,23 @@ async function renderWeightHistory() {
       document.getElementById('weight-stats').style.display = 'none';
       return;
     }
+
+    // Goal progress
+    const latest = entries[0].weight;
+    const lost = START_WEIGHT - latest;
+    const pct = Math.min(100, Math.max(0, (lost / TOTAL_TO_LOSE) * 100));
+    const toGo = Math.max(0, latest - TARGET_WEIGHT).toFixed(1);
+    const now = getAETDate();
+    const daysLeft = Math.max(0, Math.ceil((TARGET_DATE - now) / (1000 * 60 * 60 * 24)));
+
+    document.getElementById('wg-progress-bar').style.width = pct.toFixed(1) + '%';
+    document.getElementById('wg-pct').textContent = pct.toFixed(0) + '% of goal complete (' + lost.toFixed(1) + 'kg lost)';
+    document.getElementById('wg-to-go').textContent = toGo + ' kg';
+    document.getElementById('wg-days-left').textContent = daysLeft + ' days to target';
+
+    // Stats
     document.getElementById('weight-stats').style.display = 'block';
-    document.getElementById('stat-latest').textContent = entries[0].weight + ' kg';
+    document.getElementById('stat-latest').textContent = latest + ' kg';
     document.getElementById('stat-entries').textContent = entries.length;
     if (entries.length > 1) {
       const diff = (entries[0].weight - entries[1].weight).toFixed(1);
@@ -1038,16 +1137,18 @@ async function renderWeightHistory() {
     } else {
       document.getElementById('stat-change').textContent = '—';
     }
+
+    // History list
     el.innerHTML = entries.map((e, i) => {
-      const d = new Date(e.date);
       let diff = '';
       if (i < entries.length - 1) {
         const delta = (e.weight - entries[i+1].weight).toFixed(1);
         diff = `<div class="weight-diff ${delta > 0 ? 'up' : 'down'}">${delta > 0 ? '+' : ''}${delta} kg</div>`;
       }
-      return `<div class="weight-entry">
-        <div class="weight-date">${d.toLocaleDateString('en-AU', { weekday:'short', day:'numeric', month:'short' })}</div>
-        <div class="weight-val">${e.weight} kg</div>
+      const isGoal = e.weight <= TARGET_WEIGHT;
+      return `<div class="weight-entry" style="${isGoal ? 'border-color:rgba(93,187,122,0.4);background:rgba(93,187,122,0.05);' : ''}">
+        <div class="weight-date">${formatAETDate(e.date + 'T12:00:00', { weekday:'short', day:'numeric', month:'short' })}</div>
+        <div class="weight-val">${e.weight} kg${isGoal ? ' 🎯' : ''}</div>
         ${diff}
       </div>`;
     }).join('');
@@ -1060,7 +1161,7 @@ async function renderWeightHistory() {
 const JOURNAL_DOMAINS = ['body', 'being', 'balance', 'business', 'freewrite'];
 
 function initJournal() {
-  document.getElementById('journal-date-display').textContent = new Date().toLocaleDateString('en-AU', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  document.getElementById('journal-date-display').textContent = new Date().toLocaleDateString('en-AU', { timeZone: AET, weekday:'long', day:'numeric', month:'long', year:'numeric' });
   updateJournalFields();
   renderJournalHistory();
 }
@@ -1107,7 +1208,7 @@ async function saveJournal() {
 
   const now = new Date();
   const record = {
-    id: Date.now(),
+    id: now.getTime(),
     ts: now.toISOString(),
     domains: activeDomains,
     entries,
@@ -1137,8 +1238,8 @@ async function renderJournalHistory() {
     }
     el.innerHTML = entries.map(e => {
       const d = new Date(e.ts);
-      const dateStr = d.toLocaleDateString('en-AU', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
-      const timeStr = d.toLocaleTimeString('en-AU', { hour:'2-digit', minute:'2-digit' });
+      const dateStr = formatAETDate(e.ts, { weekday:'short', day:'numeric', month:'short', year:'numeric' });
+      const timeStr = formatAETTime(e.ts, { hour:'2-digit', minute:'2-digit' });
       const domainLabels = { body:'💪 BODY', being:'🧘 BEING', balance:'❤️ BALANCE', business:'💼 BUSINESS', freewrite:'✍️ FREE WRITE' };
       const domainStr = (e.domains || []).map(d => domainLabels[d] || d).join(' · ');
       const preview = Object.values(e.entries || {}).find(v => v?.trim()) || '';
@@ -1158,9 +1259,8 @@ async function viewJournalEntry(id) {
     const rows = await sbGet('journal', `id=eq.${id}`);
     if (!rows.length) return;
     const entry = rows[0];
-    const d = new Date(entry.ts);
-    const dateStr = d.toLocaleDateString('en-AU', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
-    const timeStr = d.toLocaleTimeString('en-AU', { hour:'2-digit', minute:'2-digit' });
+    const dateStr = formatAETDate(entry.ts, { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    const timeStr = formatAETTime(entry.ts, { hour:'2-digit', minute:'2-digit' });
     const domainLabels = { body:'💪 BODY', being:'🧘 BEING', balance:'❤️ BALANCE', business:'💼 BUSINESS', freewrite:'✍️ FREE WRITE' };
 
     document.getElementById('modal-title').textContent = `Journal Entry`;
@@ -1182,6 +1282,151 @@ async function viewJournalEntry(id) {
   } catch(e) { toast('Could not load entry', 'var(--red)'); }
 }
 
+// ===== PARKRUN =====
+let prChart = null;
+
+function timeToSecs(t) {
+  if (!t) return 0;
+  const parts = t.split(':');
+  return parseInt(parts[0]) * 60 + parseInt(parts[1] || 0);
+}
+
+function secsToTime(s) {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${m}:${String(sec).padStart(2,'0')}`;
+}
+
+async function initParkrun() {
+  // Set today's date as default
+  document.getElementById('pr-date').value = getTodayKey();
+  await renderParkrunHistory();
+}
+
+async function saveParkrun() {
+  const date = document.getElementById('pr-date').value;
+  const time = document.getElementById('pr-time').value.trim();
+  const position = document.getElementById('pr-position').value.trim();
+  const course = document.getElementById('pr-course').value.trim();
+
+  if (!date || !time || !course) { toast('Please fill in date, time and course', 'var(--red)'); return; }
+  if (!/^\d{1,2}:\d{2}$/.test(time)) { toast('Time format should be mm:ss e.g. 27:11', 'var(--red)'); return; }
+
+  const record = {
+    id: Date.now(),
+    date,
+    time,
+    time_secs: timeToSecs(time),
+    position: position ? parseInt(position) : null,
+    course,
+  };
+
+  setSyncStatus('syncing', 'Saving parkrun result...');
+  try {
+    await sbUpsert('parkrun', record);
+    setSyncStatus('synced', 'Parkrun result saved ✓');
+    toast('Result saved! 🏃');
+    document.getElementById('pr-time').value = '';
+    document.getElementById('pr-position').value = '';
+    document.getElementById('pr-course').value = '';
+    await renderParkrunHistory();
+  } catch(e) {
+    setSyncStatus('error', 'Could not save');
+    toast('Save failed', 'var(--red)');
+  }
+}
+
+async function renderParkrunHistory() {
+  const el = document.getElementById('pr-history-list');
+  el.innerHTML = '<div class="empty-state"><div class="loading-spinner"></div></div>';
+  try {
+    const results = await sbGet('parkrun', 'order=date.desc&limit=52');
+    if (!results.length) {
+      el.innerHTML = '<div class="empty-state"><div class="icon">🏃</div><p>No results yet — log your first parkrun!</p></div>';
+      document.getElementById('pr-stats').style.display = 'none';
+      document.getElementById('pr-chart-wrap').style.display = 'none';
+      return;
+    }
+
+    // Stats
+    const secs = results.map(r => r.time_secs).filter(Boolean);
+    const pb = Math.min(...secs);
+    const avg = Math.round(secs.reduce((a,b) => a+b, 0) / secs.length);
+    document.getElementById('pr-pb').textContent = secsToTime(pb);
+    document.getElementById('pr-latest').textContent = results[0].time;
+    document.getElementById('pr-count').textContent = results.length;
+    document.getElementById('pr-avg').textContent = secsToTime(avg);
+    document.getElementById('pr-stats').style.display = 'block';
+
+    // Chart — oldest to newest
+    const chartData = [...results].reverse();
+    document.getElementById('pr-chart-wrap').style.display = 'block';
+    if (prChart) prChart.destroy();
+    const ctx = document.getElementById('pr-chart').getContext('2d');
+    prChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: chartData.map(r => formatAETDate(r.date + 'T12:00:00', { day:'numeric', month:'short' })),
+        datasets: [{
+          data: chartData.map(r => r.time_secs),
+          borderColor: '#e8c547',
+          backgroundColor: 'rgba(232,197,71,0.08)',
+          borderWidth: 2.5,
+          pointBackgroundColor: chartData.map(r => r.time_secs === pb ? '#5dbb7a' : '#e8c547'),
+          pointRadius: 5,
+          tension: 0.3,
+          fill: true,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => ' ' + secsToTime(ctx.raw),
+            }
+          }
+        },
+        scales: {
+          y: {
+            reverse: false,
+            ticks: {
+              color: '#8a8f9e',
+              callback: val => secsToTime(val),
+              font: { family: 'DM Sans', size: 11 },
+            },
+            grid: { color: 'rgba(255,255,255,0.05)' },
+          },
+          x: {
+            ticks: { color: '#8a8f9e', font: { family: 'DM Sans', size: 11 }, maxRotation: 45 },
+            grid: { display: false },
+          }
+        }
+      }
+    });
+
+    // History list
+    el.innerHTML = results.map(r => {
+      const isPB = r.time_secs === pb;
+      const d = formatAETDate(r.date + 'T12:00:00', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
+      return `<div class="weight-entry" style="${isPB ? 'border-color:rgba(93,187,122,0.4);background:rgba(93,187,122,0.05);' : ''}">
+        <div>
+          <div style="font-size:0.85rem;font-weight:600;color:var(--text);">${r.course}</div>
+          <div class="weight-date">${d}${r.position ? ' · #' + r.position : ''}</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="weight-val">${r.time}</div>
+          ${isPB ? '<div style="font-size:0.68rem;color:var(--green);font-weight:700;">🏆 PB</div>' : ''}
+        </div>
+      </div>`;
+    }).join('');
+
+  } catch(e) {
+    el.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>Could not load results</p></div>';
+  }
+}
+
 // ===== KEYBOARD =====
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && e.ctrlKey && stackActive) stackNext();
@@ -1189,7 +1434,7 @@ document.addEventListener('keydown', (e) => {
 
 // ===== INIT =====
 async function init() {
-  const now = new Date();
+  const now = getAETDate();
   const hour = now.getHours();
   document.getElementById('time-greeting').textContent = hour < 12 ? 'Morning' : hour < 17 ? 'Afternoon' : 'Evening';
   document.getElementById('today-date').textContent = now.toLocaleDateString('en-AU', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
