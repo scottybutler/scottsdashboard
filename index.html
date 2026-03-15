@@ -668,8 +668,14 @@ function getAETDate() {
 }
 
 function getTodayKey() {
-  const d = getAETDate();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const now = new Date();
+  const aetDate = new Intl.DateTimeFormat('en-AU', {
+    timeZone: AET, year: 'numeric', month: '2-digit', day: '2-digit'
+  }).formatToParts(now);
+  const y = aetDate.find(p => p.type === 'year').value;
+  const m = aetDate.find(p => p.type === 'month').value;
+  const d = aetDate.find(p => p.type === 'day').value;
+  return `${y}-${m}-${d}`;
 }
 
 function getAETNow() {
@@ -881,6 +887,25 @@ function formatStackQ(q) {
 }
 
 function startStack() {
+  // Check for in-progress stack saved in sessionStorage
+  const saved = sessionStorage.getItem('stack_draft');
+  if (saved) {
+    try {
+      const draft = JSON.parse(saved);
+      if (confirm(`You have an unfinished stack "${draft.answers.title || 'Untitled'}" at question ${draft.current + 1}. Continue it?`)) {
+        stackAnswers = draft.answers;
+        stackCurrent = draft.current;
+        stackActive = true;
+        document.getElementById('stack-start').style.display = 'none';
+        document.getElementById('stack-complete').style.display = 'none';
+        document.getElementById('stack-active').style.display = 'block';
+        renderStackQuestion();
+        return;
+      } else {
+        sessionStorage.removeItem('stack_draft');
+      }
+    } catch(e) {}
+  }
   stackAnswers = {};
   stackCurrent = 0;
   stackActive = true;
@@ -888,6 +913,14 @@ function startStack() {
   document.getElementById('stack-complete').style.display = 'none';
   document.getElementById('stack-active').style.display = 'block';
   renderStackQuestion();
+}
+
+function autoSaveStackDraft() {
+  sessionStorage.setItem('stack_draft', JSON.stringify({
+    answers: stackAnswers,
+    current: stackCurrent,
+    savedAt: Date.now()
+  }));
 }
 
 function renderStackQuestion() {
@@ -906,6 +939,7 @@ function stackNext() {
   const val = document.getElementById('stack-answer').value.trim();
   stackAnswers[STACK_QUESTIONS[stackCurrent].key] = val;
   stackCurrent++;
+  autoSaveStackDraft();
   if (stackCurrent >= STACK_QUESTIONS.length) completeStack();
   else renderStackQuestion();
 }
@@ -914,12 +948,14 @@ function stackBack() {
   if (stackCurrent > 0) {
     stackAnswers[STACK_QUESTIONS[stackCurrent].key] = document.getElementById('stack-answer').value.trim();
     stackCurrent--;
+    autoSaveStackDraft();
     renderStackQuestion();
   }
 }
 
 function abandonStack() {
   if (confirm('Abandon this stack? Your answers will be lost.')) {
+    sessionStorage.removeItem('stack_draft');
     document.getElementById('stack-active').style.display = 'none';
     document.getElementById('stack-start').style.display = 'block';
     stackActive = false;
@@ -934,6 +970,7 @@ async function completeStack() {
   document.getElementById('stack-complete').style.display = 'block';
   document.getElementById('stack-complete-revelation').textContent = stackAnswers.revelation || 'Your stack has been saved.';
   stackActive = false;
+  sessionStorage.removeItem('stack_draft');
 
   setSyncStatus('syncing', 'Saving stack...');
   try {
@@ -2040,6 +2077,11 @@ init();
   }
 
   function checkTimeout() {
+    // Never lock mid-stack — save the draft and wait
+    if (typeof stackActive !== 'undefined' && stackActive) {
+      resetTimer(); // keep resetting while stack is running
+      return;
+    }
     const lastActive = parseInt(sessionStorage.getItem(LAST_ACTIVE_KEY) || '0');
     if (Date.now() - lastActive > TIMEOUT_MS) {
       showLockScreen();
